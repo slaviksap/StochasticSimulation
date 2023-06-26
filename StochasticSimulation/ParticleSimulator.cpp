@@ -58,10 +58,11 @@ void ParticleSimulator::initialStochasticDistribution()
 		for (int i = 0; i < N; ++i)
 		{
 			//first_layer.emplace_back(Vec3{ Randomizer::sampleNorm(),0 ,0});
-			first_layer.emplace_back(Randomizer::sampleNormVec3());
+			//first_layer.emplace_back(Randomizer::sampleNormVec3());
+			first_layer.emplace_back(Vec3{ norm(Randomizer::gens[omp_get_thread_num()]),norm(Randomizer::gens[omp_get_thread_num()]),norm(Randomizer::gens[omp_get_thread_num()]) });
 		}
 	}
-	if (init.type == Distributions::RECTANGLE)
+	else if (init.type == Distributions::RECTANGLE)
 	{
 		double range = init.b - init.a;
 		for (int i = 0; i < N; ++i)
@@ -71,6 +72,14 @@ void ParticleSimulator::initialStochasticDistribution()
 			v.a[1] = init.a + Randomizer::sampleUni() * range;
 			v.a[2] = init.a + Randomizer::sampleUni() * range;
 			first_layer.push_back(v);
+		}
+	}
+	else if (init.type == Distributions::NORM1D)
+	{
+		normal_distribution<> norm(init.a, init.b);
+		for (int i = 0; i < N; ++i)
+		{
+			first_layer.emplace_back(Vec3{ Randomizer::sampleNorm(),0 ,0 });
 		}
 	}
 }
@@ -125,7 +134,7 @@ void ParticleSimulator::make_histogram_init(int sect, double min, double max, ve
 
 void ParticleSimulator::replenish_histogram(vector<double>& result, vector<Vec3>& layer)
 {
-	vector<double> hist(init.sect,0);
+	vector<double> hist(init.sect, 0);
 	const double dx = (init.max - init.min) / init.sect;
 	for (const auto& v : layer)
 	{
@@ -134,11 +143,25 @@ void ParticleSimulator::replenish_histogram(vector<double>& result, vector<Vec3>
 			hist[size_t((x - init.min) / dx)] += 1;
 	}
 	for (double& x : hist)
+		x = x / layer.size() / dx;
+	for (int i = 0; i < result.size(); ++i)
+		result[i] += hist[i];
+}
+void ParticleSimulator::replenish_histogram(vector<double>& result, vector<double>& layer, double min, double max, int sect)
+{
+	int N = layer.size();
+	vector<double> hist(sect, 0);
+	const double dx = (max - min) / sect;
+	for (const auto& x : layer)
+	{
+		if (min <= x && x <= max)
+			hist[size_t((x - min) / dx)] += 1;
+	}
+	for (double& x : hist)
 		x = x / N / dx;
 	for (int i = 0; i < result.size(); ++i)
 		result[i] += hist[i];
 }
-
 void ParticleSimulator::write_init(const string& fileName)
 {
 	const double dx = (init.max - init.min) / init.sect;
@@ -148,6 +171,26 @@ void ParticleSimulator::write_init(const string& fileName)
 	{
 		file << init.min + dx * i << "\t" << init_result[i] << endl;
 	}
+
+	file.close();
+
+	vector<double> fluctResult;
+	for (int i = 0; i < init.sect; ++i)
+	{
+		fluctResult.push_back((init_result[i] - gaussFunc(init.a, init.b, init.min + dx * i)) / gaussFunc(init.a, init.b, init.min + dx * i));
+	}
+	int sect = init.sect / 2;
+	double minFluc = *min_element(fluctResult.begin(), fluctResult.end());
+	double dxFluc = abs(minFluc) * 2 / sect;
+	vector<double> fluctHist(sect, 0);
+	replenish_histogram(fluctHist, fluctResult, -abs(minFluc), abs(minFluc), sect);
+
+	file.open("Tables\\spasmodic_init_fluctuations.txt");
+	for (int i = 0; i < sect; ++i)
+	{
+		file << minFluc + dxFluc * i << "\t" << fluctHist[i] << endl;
+	}
+	file.close();
 }
 void ParticleSimulator::write_result(const string& fileName)
 {
@@ -158,6 +201,34 @@ void ParticleSimulator::write_result(const string& fileName)
 	{
 		file << init.min + dx * i << "\t" << result[i] << endl;
 	}
+	file.close();
+
+	vector<double> fluctResult;
+	for (int i = 0; i < init.sect; ++i)
+	{
+		fluctResult.push_back(result[i] - gaussFunc(init.a, init.b, init.min + dx * i));
+	}
+	int sect = init.sect;
+	double minFluc = *min_element(fluctResult.begin(), fluctResult.end());
+	double dxFluc = abs(minFluc) * 2 / sect;
+	vector<double> fluctHist(sect);
+	replenish_histogram(fluctHist, fluctResult, -abs(minFluc), abs(minFluc), sect);
+
+	file.open("Tables\\spasmodic_fluctuations.txt");
+	for (int i = 0; i < sect; ++i)
+	{
+		file << minFluc + dxFluc * i << "\t" << fluctHist[i] << endl;
+	}
+	file.close();
+
+	//определение численной дисперсии
+	double EX = 0, EX2 = 0;
+	for (int i = 0; i < result.size(); ++i)
+	{
+		EX += (init.min + dx * i) * result[i];
+		EX2 += (init.min + dx * i) * result[i] * result[i];
+	}
+	cout << "Result dispersion = " << EX2 * N - pow(EX, 2) << endl;
 }
 double ParticleSimulator::Energy(vector<Vec3>& layer)
 {

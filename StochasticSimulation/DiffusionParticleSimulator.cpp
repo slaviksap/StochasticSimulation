@@ -58,7 +58,60 @@ void DiffusionParticleSimulator::Calculate()
 		sigma_mean.a[1][0] << "\t" << sigma_mean.a[1][1] << "\t" << sigma_mean.a[1][2] << endl <<
 		sigma_mean.a[2][0] << "\t" << sigma_mean.a[2][1] << "\t" << sigma_mean.a[2][2] << endl;
 }
+void DiffusionParticleSimulator::CalculateWithIntegral()
+{
+	double startEnergy = 0, endEnergy = 0, startImpuls = 0, endImpuls = 0;
+	layer.assign(N, Vec3{ 0,0,0 });
+	double a_mean = 0;
+	Mat3 sigma_mean = Mat3{ 0,0,0,0,0,0,0,0,0 };
+	for (int m = 1; m <= M; ++m)
+	{
+		initialStochasticDistribution();
+		prev_layer = first_layer;
+		double t = 0;
 
+		for (int i = 1; i <= k; ++i)
+		{
+			t += dt;
+			for (int j = 0; j < N; ++j)
+			{
+				Vec3 v = prev_layer[j];
+				auto a = demolition(v, t);
+				auto sigma = volatility(v, t);
+				//cout << a << "\t" << sigma.a[0][0] << endl;
+				a_mean += a;
+				sigma_mean += sigma;
+				layer[j] = (v - v * a * dt + sigma * Randomizer::sampleNormVec3() * sdt);
+			}
+			if (i != k)
+				prev_layer = layer;
+		}
+		startEnergy += Energy(first_layer);
+		startImpuls += Impuls(first_layer);
+		endEnergy += Energy(layer);
+		endImpuls += Impuls(layer);
+		replenish_histogram(init_result, first_layer);
+		replenish_histogram(result, layer);
+		cout << m << "\t" << Energy(layer) << endl;
+	}
+	for (auto& i : init_result)
+		i /= M;
+	for (auto& i : result)
+		i /= M;
+	startEnergy /= M;
+	startImpuls /= M;
+	endEnergy /= M;
+	endImpuls /= M;
+	a_mean /= k * N * M;
+	sigma_mean /= k * N * M;
+	std::cout << "Start energy = " << startEnergy << endl << "Start impuls = " << startImpuls << endl;
+	std::cout << "End energy = " << endEnergy << endl << "End Impuls = " << endImpuls << endl;
+	std::cout << "Energy change = " << startEnergy / endEnergy << endl << "Impuls change = " << startImpuls / endImpuls << endl;
+	std::cout << "a mean = " << a_mean <<  endl;
+	std::cout << "sigma mean = \n" << sigma_mean.a[0][0] << "\t" << sigma_mean.a[0][1] << "\t" << sigma_mean.a[0][2] << endl <<
+		sigma_mean.a[1][0] << "\t" << sigma_mean.a[1][1] << "\t" << sigma_mean.a[1][2] << endl <<
+		sigma_mean.a[2][0] << "\t" << sigma_mean.a[2][1] << "\t" << sigma_mean.a[2][2] << endl;
+}
 double DiffusionParticleSimulator::demolition(const Vec3& v, double t)
 {
 	double c = mag(v);
@@ -66,7 +119,7 @@ double DiffusionParticleSimulator::demolition(const Vec3& v, double t)
 		return 0;
 	double right = sqrt(Pi) * erf(c) * (2 * c * c + 2 - 1 / (2 * c * c)) + exp(-c * c) * (2 * c + 1 / c);
 	double coef = sqrt(Pi) * right / (4 * c);
-	return coef;
+	return coef / 10;
 }
 
 Mat3 DiffusionParticleSimulator::volatility(const Vec3& v, double t)

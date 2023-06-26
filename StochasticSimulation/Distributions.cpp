@@ -1,6 +1,6 @@
 #include "Distributions.h"
 #include <cmath>
-
+#include <random>
 std::string distrib_name(Distributions distr)
 {
 	if (distr == Distributions::RECTANGLE)
@@ -53,4 +53,14 @@ double init_func(double x, Distributions distr, double a, double b, double c)
 		double temp = 2 * (a + 1) / (a * (a + 2)) * trig * trig;
 		return pow(temp, 1 / a) / pow(q0 * b, 1 / a);
 	}
+}
+
+double gaussFunc(double a, double sigma, double x)
+{
+	return 1 / (sigma * sqrt(2 * std::_Pi)) * exp(-(x - a) * (x - a) / (2 * sigma * sigma));
+}
+
+double multivariateStandardNormal(double x1, double x2, double x3)
+{
+	return 1 / pow(2 * std::_Pi, 1.5) * exp(-0.5 * (x1 * x1 + x2 * x2 + x3 * x3));
 }

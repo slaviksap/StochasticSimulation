@@ -3,6 +3,7 @@
 #include "DiffusionParticleSimulator.h"
 #include "SemiDiffusionParticleSimulator.h"
 #include "SpasmodicParticleSimulator.h"
+#include "OneDimensionalDifferenceProblem.h"
 #include <omp.h>
 
 using namespace std;
@@ -31,7 +32,7 @@ void SpasmodicSimulation()
 			SpasmodicParticleSimulator simulator(N, t, k,10, 40,time(0));
 			simulator.setInitialDistribution(Distributions::NORM, 0, 1, 1, -5, 5, 100);
 			auto start = omp_get_wtime();
-			simulator.Calculate(i);
+			simulator.Calculate();
 
 			cout << "Time: " << omp_get_wtime() - start << endl;
 
@@ -77,39 +78,26 @@ void SpasmodicSimulation()
 }
 int main()
 {
-	//Randomizer::init(8, 2412412, 100000);
-	//int N = 1000;
-	//double t = 1;
+	Randomizer::init(8, 2412412, 100000);
+	//int N = 100;
+	//double t = 5;
 	//int k = 1000;
-	//int M = 100;
-	//DiffusionParticleSimulator diffusion(N, t, k, M);
+	//int M = 50;
+	//SemiDiffusionParticleSimulator diffusion(N, t, k, M);
 	//diffusion.setInitialDistribution(Distributions::NORM, 0, 1, 1, -5, 5, 100);
 	//auto start = clock();
 	//diffusion.Calculate();
 	//cout << "Time: " << clock() - start << endl;
-	//diffusion.write_result("Tables\\init_diffusion.txt");
-	//diffusion.write_init("Tables\\last_diffusion.txt");
+	//diffusion.write_result("Tables\\last_semiDiffusion.txt");
+	//diffusion.write_init("Tables\\init_semiDiffusion.txt");
 	//start = omp_get_wtime();
-	////SpasmodicSimulation();
-	////cout << "Time: " << omp_get_wtime() - start << endl;
-	//cout << "Ready!\n";
-	//cin.get();
-	ofstream file;
-	file.open("Tables\\sigma_function.txt");
-	const double Pi = 3.1415926535897;
-	for (double c = 0.001; c <= 3; c += 0.001)
-	{
-		const double perf = sqrt(Pi) * erf(c);
-		const double c2 = c * c;
-		const double c3 = c2 * c;
-		const double P = perf * (c3 / 3 + 1.5 * c + 0.75 / c - 0.125 / c3) + exp(-c2) * (c2 / 3 + 4.0 / 3 + 0.25 / c2);
-		const double S = perf * (c + 1.5 / c - 0.75 / c3 + 3.0 / (8 * pow(c, 5))) + exp(-c2) * (1 + 1 / c2 - 3.0 / (4 * pow(c, 4)));
-		const double lambda1 = c2 * S + P;
-
-		double coef = 0;
-		if (P + S >= 0)
-			coef = pow(Pi, 0.25) / 2 * sqrt(P + S);
-		file << c << "\t" << coef << endl;
-	}
+	SpasmodicParticleSimulator simulator (800, 5, 200, 500, 40, rand());
+	simulator.setInitialDistribution(Distributions::NORM, 0, 45, 1, -220, 220, 1200);
+	simulator.initialStochasticDistribution();
+	simulator.Calculate();
+	simulator.write_result("Tables\\last_spasmodic.txt");
+	simulator.write_init("Tables\\init_spasmodic.txt");
+	cout << "Ready!\n";
+	cin.get();
 	return 0;
 }

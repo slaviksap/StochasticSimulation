@@ -16,9 +16,10 @@ public:
         dThetta = dPhi;
         dw = 4 * _Pi / (angleSteps * angleSteps / 2);
     }
-    void Calculate(int trial_num);
+    void Calculate();
+    void CalculateRandomNTest(double deviation);
+    void CalculateDiffLambdaTest();
     Vec3 demolition(const Vec3& v, double t){ return Vec3{ 0,0,0, }; }
     Mat3 volatility(const Vec3& v, double t) { return boost::qvm::zero_mat<double, 3>(); }
-
 };
 

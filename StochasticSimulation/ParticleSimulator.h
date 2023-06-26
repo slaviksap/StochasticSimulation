@@ -60,7 +60,7 @@ public:
 	vector<double> init_result;	//осредненный по всем испытаниям начальные условия
 	vector<double> result;		//осредненный по всем испытаниям результат
 	ParticleSimulator(int N, double t, size_t k, int M) :N(N), tmax(t),
-		k(k),M(M), dt(tmax / k), init(), mass(), prev_layer(), layer()
+		k(k),M(M), dt(t / k), init(), mass(), prev_layer(), layer()
 	{
 		sdt = sqrt(dt);
 	}
@@ -89,5 +89,6 @@ public:
 	void make_histogram(int sect, double min, double max, vector<double>& hist);
 	void make_histogram_init(int sect, double min, double max, vector<double>& hist);
 	void replenish_histogram(vector<double>& result, vector<Vec3>& layer);
+	void replenish_histogram(vector<double>& result, vector<double>& layer, double min, double max, int sect);
 };
 

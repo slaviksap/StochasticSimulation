@@ -50,5 +50,8 @@
     <ClInclude Include="SpasmodicParticleSimulator.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="OneDimensionalDifferenceProblem.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>
