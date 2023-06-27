@@ -76,27 +76,61 @@ void SpasmodicSimulation()
 		}
 	}
 }
+
+void SpasmodicRungeOOC()
+{
+	int N = 800;
+	int k = 100;
+	int M = 200;
+	double t = 4;
+	int gridsize = 1200;
+	vector<double> u1;
+	{
+		SpasmodicParticleSimulator simulator(N, t, k, M, 40, rand());
+		simulator.setInitialDistribution(Distributions::NORM, 0, 45, 1, -220, 220, gridsize);
+		simulator.Calculate();
+		u1 = simulator.result;
+	}
+	vector<double> u2;
+	t /= 2;
+	{
+		SpasmodicParticleSimulator simulator(N, t, k, M, 40, rand());
+		simulator.setInitialDistribution(Distributions::NORM, 0, 45, 1, -220, 220, gridsize);
+		simulator.Calculate();
+		u2 = simulator.result;
+	}
+	vector<double> u3;
+	t /= 2;
+	{
+		SpasmodicParticleSimulator simulator(N, t, k, M, 40, rand());
+		simulator.setInitialDistribution(Distributions::NORM, 0, 45, 1, -220, 220, gridsize);
+		simulator.Calculate();
+		u3 = simulator.result;
+	}
+	vector<double> du1(gridsize);
+	vector<double> du2(gridsize);
+	for (int i = 0; i < u1.size(); ++i)
+	{
+		du1[i] = u2[i] - u1[i];
+		du2[i] = u3[i] - u2[i];
+	}
+	double eps1 = dispersion(du1);
+	double eps2 = dispersion(du2);
+	cout << "Order of approximation in disp norm for N = " << log2(eps1 / eps2) << endl;
+	eps1 = L2norm(du1);
+	eps2 = L2norm(du2);
+	cout << "Order of approximation in L2 norm for N = " << log2(eps1 / eps2) << endl;
+}
 int main()
 {
-	Randomizer::init(8, 2412412, 100000);
-	//int N = 100;
-	//double t = 5;
-	//int k = 1000;
-	//int M = 50;
-	//SemiDiffusionParticleSimulator diffusion(N, t, k, M);
-	//diffusion.setInitialDistribution(Distributions::NORM, 0, 1, 1, -5, 5, 100);
-	//auto start = clock();
-	//diffusion.Calculate();
-	//cout << "Time: " << clock() - start << endl;
-	//diffusion.write_result("Tables\\last_semiDiffusion.txt");
-	//diffusion.write_init("Tables\\init_semiDiffusion.txt");
-	//start = omp_get_wtime();
-	SpasmodicParticleSimulator simulator (800, 5, 200, 500, 40, rand());
-	simulator.setInitialDistribution(Distributions::NORM, 0, 45, 1, -220, 220, 1200);
-	simulator.initialStochasticDistribution();
+	srand(time(0));
+	Randomizer::init(8, rand(), 100000);
+	SpasmodicParticleSimulator simulator (500, 1, 100, 400, 40, rand());
+	simulator.setInitialDistribution(Distributions::RECTANGLE, 0, 45, 1, -220, 220, 1200);
 	simulator.Calculate();
 	simulator.write_result("Tables\\last_spasmodic.txt");
 	simulator.write_init("Tables\\init_spasmodic.txt");
+	//SpasmodicRungeOOC();
 	cout << "Ready!\n";
 	cin.get();
 	return 0;

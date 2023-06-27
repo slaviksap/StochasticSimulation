@@ -43,6 +43,11 @@ namespace Randomizer
 		v.a[2] = distr(gens[threadnum]);
 		return v;
 	}
+
+	static mt19937& gen()
+	{
+		return gens[omp_get_thread_num()];
+	}
 };
 class ParticleSimulator
 {

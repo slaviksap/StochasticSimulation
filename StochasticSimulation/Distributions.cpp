@@ -64,3 +64,34 @@ double multivariateStandardNormal(double x1, double x2, double x3)
 {
 	return 1 / pow(2 * std::_Pi, 1.5) * exp(-0.5 * (x1 * x1 + x2 * x2 + x3 * x3));
 }
+
+double dispersion(std::vector<double>& x)
+{
+	int N = x.size();
+	double EX = 0;
+	double EX2 = 0;
+	for (auto d : x)
+	{
+		EX += d;
+		EX2 += d * d;
+	}
+	EX /= N;
+	EX2 /= N;
+	return EX2 - EX * EX;
+}
+
+double expectation(std::vector<double>& x)
+{
+	double sum = 0;
+	for (auto d : x)
+		sum += d;
+	return sum / x.size();
+}
+
+double L2norm(std::vector<double>& x)
+{
+	double sum = 0;
+	for (auto d : x)
+		sum += d * d;
+	return sqrt(sum);
+}
